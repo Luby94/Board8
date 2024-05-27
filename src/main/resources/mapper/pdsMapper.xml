@@ -78,4 +78,58 @@
 	  OFFSET #{ arg3 } ROWS FETCH NEXT #{ arg4 } ROWS ONLY 
     </select>
     
+    <!-- 자료실 글쓰기(Board 저장) -->
+    <insert id="setWrite">
+      INSERT INTO BOARD (
+      	BNO,
+		MENU_ID,
+		TITLE,
+		CONTENT,
+		WRITER,
+		REGDATE,
+		HIT
+      )
+      VALUES (
+      	(SELECT NVL(MAX(BNO), 0) + 1 FROM BOARD),
+		#{ menu_id },
+		#{ title },
+		#{ content },
+		#{ writer },
+		SYSDATE,
+		0
+      )
+    </insert>
+    
+    <!-- 자료실 파일정보저장(Files) -->
+    <!-- File Insert : 넘어온 파일 여러개를 한번에 저장 insert all -->
+    <!-- Oracle INSERT ALL 반복할때
+    	1) ( SELECT NVL(MAX(file_num), 0) + 1 FROM FILES ) 나
+    	2) 시퀀스는
+    	한번만 실행되기 때문에 INSERT ALL 에 바로 집어넣을 수 없다
+    	별도의 ORACLE 함수를 생성하여 호출해야 값을 증가할 수 있다
+    	
+    	mybatis <insert> 안에는 ; 을 사용할 수 없다
+    	  insert value ; 를 여러번 사용할 수 없다 (이유 : ; 때문에)
+    	insert all 사용하면 insert 여러번 가능한데 이 경우
+    	  select(max()) , 시퀀스는 여러번 적어도 한번만 호출되므로
+    	  insert value 가 증가되지 않는다
+    	→ oracle 별도 함수에 시퀀스를 저장하여 반복호출하면 된다
+     -->
+    <insert id="setFileWrite">
+      <foreach item = "file" collection = "fileList" 
+      		index = "i" 
+      		open = "INSERT ALL" 
+      		close = "SELECT * FROM DUAL"
+      		separator = " "
+      		>
+      INTO FILES VALUES(
+      	GET_FILENUM(),
+      	( SELECT MAX(BNO) FROM BOARD ),
+      	#{ file.filename },
+      	#{ file.fileext },
+      	#{ file.sfilename }
+      )
+      </foreach> 
+    </insert>
+    
 </mapper>

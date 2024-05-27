@@ -1,0 +1,45 @@
+--CREATE SEQUENCE  FILENUM_SEQ;
+--
+--CREATE FUNCTION  GET_FILENUM 
+--RETURN  
+--   NUMBER
+--AS
+--   NUM  NUMBER;
+--BEGIN
+--   SELECT      FILENUM_SEQ.NEXTVAL
+--    INTO   NUM
+--    FROM DUAL;
+--    
+--    RETURN NUM; 
+--  
+--END;
+--/
+
+CREATE FUNCTION  GET_FILENUM 
+RETURN  
+   NUMBER
+AS
+   NUM  NUMBER;
+BEGIN
+   SELECT  (SELECT NVL(MAX(file_num),0)+1 FROM FILES)
+    INTO   NUM
+    FROM DUAL;
+    
+    RETURN NUM; 
+  
+END;
+/
+
+SET SERVEROUTPUT ON
+DECLARE
+    v_return NUMBER;
+BEGIN
+    v_return := get_filenum();
+    DBMS_OUTPUT.PUT_LINE('v_Return = ' || v_Return);
+END;
+/
+
+
+
+
+

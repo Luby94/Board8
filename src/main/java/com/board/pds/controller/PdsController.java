@@ -86,7 +86,8 @@ public class PdsController {
 		int offset = searchVo.getOffset();
 		int pageSize = searchVo.getPageSize();
 
-		// 자료실 목록
+		// pdsService - db (mapper) + 추가적인 로직(비지니스)
+		// 자료실 목록 조회 : Board + Files
 		//List<PdsVo> pdsList = pdsService.getPdsList(map);
 		// 계산된 페이지 정보의 일부(limitStart, recordSize)를 기준으로 리스트 데이터 조회 후 응답 데이터 반환
 		List<PdsVo> pdsList = pdsService.getPdsPagingList(menu_id, title, writer, offset, pageSize);
@@ -159,12 +160,17 @@ public class PdsController {
 	@RequestMapping("/Write")
 	public ModelAndView write(
 			@RequestParam HashMap<String, Object> map,
-			@RequestParam(value="", required=false) MultipartFile[] uploadFiles	// required=false : 입력하지 않을 수 있다
+			@RequestParam(value="nowpage") int nowpage,
+			@RequestParam(value="upfile", required=false) MultipartFile[] uploadFiles
 			) {
+		// required=false : 입력하지 않을 수 있다
+		// value="upfile" : write.jsp 의 <input type="file" name="upfile" class="upfile" multiple /> 의 name="upfile"
 		
 		// 넘어온 정보
 		log.info("=========Pds/Write===========");
 		log.info("map : {}", map);
+		log.info("nowpage : {}", nowpage);
+		log.info("files : {}", uploadFiles);
 		log.info("=========Pds/Write===========");
 
 		// 저장
@@ -172,16 +178,30 @@ public class PdsController {
 		// 1. map 정보
 		// 새글 저장 → Board table 저장
 		
-		// 2. request 정보 활용
-		// 2-1. 업로드 시 파일 정보 저장 → Files table 저장
-		// 2-2. 실제 폴더에 파일 저장 → uploadPath (d:\data 폴더)
+		// 2. MultipartFile [] 정보 활용
+		// 2-1. 실제 폴더에 파일 저장 → uploadPath (d:\dev\data 폴더)
+		// 2-2. 저장된 파일정보를 db 에 저장 → Files table 저장
 		pdsService.setWrite(map, uploadFiles);
+		// ① Board 에 map 저장
+		// ② Files 에 저장된 파일정보를 저장
+		// ③ 파일 : 디스크에 저장
 		
-		String menu_id = "MENU01";
+		//String menu_id = "MENU01";
+		// setViewName 설정1
+		//String fmt = "redirect:/Pds/List?menu_id=%s&nowpage=%d";
+		//String loc = String.format(fmt, map.get("menu_id"), map.get("nowpage"));
+		//mv.setViewName( loc );
+		// setViewName 설정2
+		//String loc  = "redirect:/Pds/List"; 
+		//	   loc += "?menu_id=" + map.get("menu_id");
+		//     loc += "&nowpage=" + map.get("nowpage");
+		//mv.setViewName( loc );
 		
 		ModelAndView mv = new ModelAndView();
 		mv.addObject("map", map);
-		mv.setViewName("redirect://Pds/List?menu_id=" + menu_id);
+		mv.addObject("nowpage", nowpage);
+		//mv.setViewName("redirect:/Pds/List?menu_id=" + map.get("menu_id") + "&nowpage=" + nowpage);  →  주소줄 nowpage 2개 생김
+		mv.setViewName("redirect:/Pds/List?menu_id=" + map.get("menu_id"));
 		return mv;
 		
 	}

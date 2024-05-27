@@ -64,7 +64,8 @@
 	    </tr>
 	    <tr>
 	      <td colspan="6">
-	        [<a href="/Pds/WriteForm?menu_id=${map.menu_id}&nowpage=${map.nowpage}">새 글 추가</a>]
+	        [<a href="/Pds/WriteForm?menu_id=${map.menu_id}&nowpage=${map.nowpage}">새 글 추가</a>]&nbsp;&nbsp;&nbsp;&nbsp;
+	        [<a href="/">홈으로 이동</a>]
 	      </td>
 	    </tr>
 	    

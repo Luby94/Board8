@@ -44,14 +44,16 @@
 	  let num = 1;
 	  $('#btnAddFile').on('click', function(e) {
 		  
-		  let tag = '<input type="file" name="upfile'
-		  		  + num + '" class="upfile" multiple/><br>';
+		  let tag = '<input type="file" name="upfile"' + ' class="upfile" multiple /><br>';
 		  $('#tdfile').append(tag);
 		  num++;
 		  
 	  })
 	  
   })
+  
+  // html input type="file" name="upload" multiple />
+  // 여러파일을 선택하여 보낼 수 있다 + ctrl 이나 shift 여러개 선택
 </script>
 
 </head>
@@ -60,8 +62,8 @@
     
     <%@include file="/WEB-INF/include/pdspagingmenus.jsp" %>
   
-	<h2>게시글 등록</h2>
-	<form action="/Pds/Write" method="POST" enctype="multipart/form-data">
+	<h2>자료실 글 등록</h2>
+	<form action="/Pds/Write" method="POST" enctype="multipart/form-data"><!-- 파일전송(binary) -->
 	<input type="hidden" name="menu_id" value="${ map.menu_id }" />
 	<input type="hidden" name="nowpage" value="${ map.nowpage }" />
 	<table>
@@ -81,7 +83,7 @@
 	   <td>파일</td>
 	   <td id="tdfile">
 	     <input type="button" id="btnAddFile" value="파일추가(최대 30MB)" />
-	     <input type="file" name="upfile" class="upfile" />
+	     <input type="file" name="upfile" class="upfile" multiple />
 	   </td>
 	 </tr>	
 	 <tr>
