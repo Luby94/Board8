@@ -15,10 +15,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.board.pds.domain.FilesVo;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class PdsFile {
 
 	// uploadPath 에 넘어온 파일들을 저장
 	public static void save(HashMap<String, Object> map, MultipartFile[] uploadFiles) {
+				
+		log.info("======PdsFile_save======");
+		log.info("map : {}", map);
+		log.info("======PdsFile_save======");
 		
 		// 저장될 경로 가져온다
 		// String uploadPath = map.get("uploadPath");
@@ -31,6 +38,7 @@ public class PdsFile {
 		//=====PdsFile_uploadPath: D:/dev/data/ , uploadFiles length: 2
 		
 		List<FilesVo> fileList = new ArrayList<>();
+		System.out.println( "=====PdsFile_fileList_1: " + fileList );
 		
 		for(MultipartFile uploadFile : uploadFiles) {
 			
@@ -40,10 +48,16 @@ public class PdsFile {
 			//=====PdsFile_originalName: disp.png
 			
 			// c:\download\data\data.abc.txt
-			String fileName = originalName.substring( originalName.lastIndexOf("\\") + 1 );	// data.abc.txt
+			//String fileName = originalName.substring( originalName.lastIndexOf("\\") + 1 );	// data.abc.txt
 			// .substring( originalName.lastIndexOf("\\") + 1 ); → 마지막 역슬러쉬(\) 에서 끝까지 자르라 → data.abc.txt 뽑을 수 있음
+			String fileName = 
+					( originalName.lastIndexOf(".") < 0 ) ? originalName
+														  : originalName.substring( originalName.lastIndexOf("\\") + 1 );	// data.abc.txt
 			
-			String fileExt = originalName.substring( originalName.lastIndexOf(".") );	// .txt
+			//String fileExt = originalName.substring( originalName.lastIndexOf(".") );	// .txt
+			String fileExt = 
+					( originalName.lastIndexOf(".") < 0 ) ? ""
+														  : originalName.substring( originalName.lastIndexOf(".") );	// .txt
 			
 			// d:\dev\data\2024\05\27
 			// 날짜 폴더 생성
@@ -78,9 +92,16 @@ public class PdsFile {
 				e.printStackTrace();
 			}	// try End
 			
+			int file_num = parseInt( map.get("file_num") );
+			int bno = parseInt( map.get("bno") );
+			
 			// 저장된 파일들의 정보를 map 에 List 로 저장 → PdsServiceImpl 에서 사용하기 위함
-			FilesVo vo = new FilesVo(0, 0, fileName, fileExt, saveName2);
+			//FilesVo vo = new FilesVo(0, 0, fileName, fileExt, saveName2);
+			FilesVo vo = new FilesVo(file_num, bno, fileName, fileExt, saveName2);
+			System.out.println( "=====PdsFile_vo: " + vo );
+			
 			fileList.add( vo );
+			System.out.println( "=====PdsFile_fileList_2: " + fileList );
 			
 		}	// end for
 		
@@ -89,6 +110,18 @@ public class PdsFile {
 		
 	}	// save() End
 
+	//-----------------------------------------------------------------------------------
+	private static int parseInt(Object object) {
+	    if (object instanceof Integer) {
+	        return (int) object;
+	    } else if (object instanceof String) {
+	        return Integer.parseInt((String) object);
+	    } else {
+	        throw new IllegalArgumentException("Invalid object type for parsing integer");
+	    }
+	}
+	//-----------------------------------------------------------------------------------
+	
 	private static String makeFolder( String uploadPath ) {	// static : 나중에 위 makeFolder 빨간줄 F2 해서 2번째꺼 클릭함 
 		
 		// d:\dev\data\2024\05\27
@@ -113,6 +146,29 @@ public class PdsFile {
 		}
 		
 		return folderPath;
+	}
+
+	// 실제 물리파일 삭제
+	public static void delete(String uploadPath, List<FilesVo> fileList) {
+		
+		String path = uploadPath;	// uploadPath : 전역변수(상단) → D:/dev/data/
+		
+		fileList.forEach( ( file ) -> {	// file : FilesVo 역할
+			
+			String sfile = file.getSfilename();	// 2024\05\27\e9071abe-8479-4456-8981-3e1cac12f645_0514(화) 산업현장 특강.txt
+			
+			File dfile = new File( path + sfile );	// dfile = delete 할 file
+			// D:/dev/data/2024\05\27\e9071abe-8479-4456-8981-3e1cac12f645_0514(화) 산업현장 특강.txt
+			
+			System.out.println( "======PdsFile_delete_삭제경로: " + dfile.getAbsolutePath() );
+			// ======PdsFile_delete_삭제경로: D:\dev\data\2024\05\27\e9071abe-8479-4456-8981-3e1cac12f645_0514(화) 산업현장 특강.txt
+			
+			//if( dfile.exists() ) {
+			//	dfile.delete();
+			//}
+			
+		});
+		
 	}
 	
 }

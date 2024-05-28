@@ -36,7 +36,8 @@
         TITLE,
         CONTENT,
         WRITER,
-        TO_CHAR( REGDATE, 'YYYY-MM-DD HH24:MI:SS' ) REGDATE
+        TO_CHAR( REGDATE, 'YYYY-MM-DD HH24:MI:SS' ) REGDATE,
+        HIT
       FROM
         BOARD
       WHERE
@@ -115,7 +116,7 @@
     	  insert value 가 증가되지 않는다
     	→ oracle 별도 함수에 시퀀스를 저장하여 반복호출하면 된다
      -->
-    <insert id="setFileWrite">
+    <!-- <insert id="setFileWrite">
       <foreach item = "file" collection = "fileList" 
       		index = "i" 
       		open = "INSERT ALL" 
@@ -130,6 +131,89 @@
       	#{ file.sfilename }
       )
       </foreach> 
+    </insert> -->
+    
+    <insert id="setFileWrite">
+      <foreach item = "file" collection = "fileList" 
+      		index = "i" 
+      		open = "INSERT ALL" 
+      		close = "SELECT * FROM DUAL"
+      		separator = " "
+      		>
+      INTO FILES VALUES(
+      	GET_FILENUM(),
+      	#{ file.bno },
+      	#{ file.filename },
+      	#{ file.fileext },
+      	#{ file.sfilename }
+      )
+      </foreach> 
     </insert>
+    
+    <!-- 조회수 증가 -->
+    <update id="setReadCountUpdate">
+      UPDATE
+        BOARD
+      SET
+        HIT = HIT + 1
+      WHERE
+        BNO = #{ bno }
+    </update>
+    
+    <!-- 파라미터 file_num 는 오류발생 : arg0, param1 ... -->
+    <select id="getFileInfo">
+      SELECT
+        FILE_NUM,
+		BNO,
+		FILENAME,
+		FILEEXT,
+		SFILENAME
+      FROM
+        FILES
+      WHERE
+        FILE_NUM = #{ arg0 }
+    </select>
+    
+    <!-- FIles Table 삭제 : bno 로 여러개 -->
+    <delete id="deleteUploadFile">
+      DELETE
+      FROM
+        FILES
+      WHERE
+        BNO = #{ bno }
+    </delete>
+
+    <!-- FIles Table 삭제 : file_num 로 한개 -->
+    <delete id="deleteUploadFileNum">
+      DELETE
+      FROM
+        FILES
+      WHERE
+        FILE_NUM = #{ file_num }
+    </delete>
+
+	<!-- Board Table 삭제 : bno -->
+    <delete id="setDelete">
+      DELETE
+      FROM
+        BOARD
+  	  WHERE
+  	    MENU_ID = #{ menu_id }
+  	  AND
+  	    BNO = #{ bno }
+    </delete>
+    
+    <!-- Board 정보 수정 -->
+    <update id="setUpdate">
+      UPDATE
+        BOARD
+      SET
+		TITLE = #{ title },
+		CONTENT = #{ content }
+      WHERE
+		BNO = #{ bno }
+	  AND
+	    MENU_ID = #{ menu_id }
+    </update>
     
 </mapper>

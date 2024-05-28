@@ -8,9 +8,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FilesVo {
+	
 	private  int     file_num;
 	private  int     bno;
 	private  String  filename;
 	private  String  fileext;
 	private  String  sfilename;
+	
 }

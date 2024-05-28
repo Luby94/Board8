@@ -22,4 +22,12 @@ public interface PdsService {
 
 	void setWrite(HashMap<String, Object> map, MultipartFile[] uploadFiles);
 
+	void setReadCountUpdate(HashMap<String, Object> map);
+
+	FilesVo getFileInfo(Long file_num);
+
+	void setDelete(HashMap<String, Object> map);
+
+	void setUpdate(HashMap<String, Object> map, MultipartFile[] uploadFiles);
+
 }

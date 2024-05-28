@@ -1,5 +1,12 @@
 package com.board.pds.controller;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -7,8 +14,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -23,6 +34,7 @@ import com.board.pds.domain.PdsSearchVo;
 import com.board.pds.domain.PdsVo;
 import com.board.pds.service.PdsService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -119,6 +131,7 @@ public class PdsController {
 		log.info("========Pds/View===========");
 
 		// 조회수 증가
+		pdsService.setReadCountUpdate(map);
 
 		// 조회할 자료실의 게시물정보 : BoardVo -> PdsVo
 		// PdsVo ( BoardVo + FilesVo )
@@ -136,7 +149,7 @@ public class PdsController {
 
 		ModelAndView mv = new ModelAndView();
 		mv.addObject("menuList", menuList);
-		mv.addObject("pdsVo", pdsVo);
+		mv.addObject("vo", pdsVo);
 		mv.addObject("fileList", fileList);
 		mv.addObject("map", map); // map : 넘겨줬을때 바뀌어진 값까지 넘겨줌
 		mv.setViewName("pds/view");
@@ -163,7 +176,7 @@ public class PdsController {
 			@RequestParam(value="nowpage") int nowpage,
 			@RequestParam(value="upfile", required=false) MultipartFile[] uploadFiles
 			) {
-		// required=false : 입력하지 않을 수 있다
+		// required=false : 입력하지 않을 수 있다(필수입력 아닐 수 있음)
 		// value="upfile" : write.jsp 의 <input type="file" name="upfile" class="upfile" multiple /> 의 name="upfile"
 		
 		// 넘어온 정보
@@ -205,5 +218,211 @@ public class PdsController {
 		return mv;
 		
 	}
+	
+	// 자료실 글 삭제
+	// /Pds/Delete?bno=${ vo.bno }&menu_id=${ vo.menu_id}&nowpage=${map.nowpage}
+	@RequestMapping("/Delete")
+	public ModelAndView delete( @RequestParam HashMap<String, Object> map ) {
+		
+		// 1. PdsServiceImpl.java 에서 '1. 해당파일 삭제' 작업 위해
+		// 1-1. List<FilesVo> fileList = map.get("fileList"); 해야함
+		// 1-2. map 에 fileList 있는지 확인
+		log.info("======Pds/Delete======");
+		log.info("map : {}", map);
+		log.info("======Pds/Delete======");
+		// 1-3. map : {bno=500, menu_id=MENU01, nowpage=1}
+		// 1-4. map 에 fileList 없음 → List<FilesVo> fileList = pdsMapper.getFileList(map); 로 수정
+		
+		// 삭제
+		pdsService.setDelete( map );
+		
+		ModelAndView mv = new ModelAndView();
+		String loc = "redirect:/Pds/List?menu_id=" + map.get("menu_id") + "&nowpage=" + map.get("nowpage");
+		mv.setViewName( loc );
+		return mv;
+		
+	}
+	
+	// 자료실 글 수정
+	// /Pds/UpdateForm?bno=${ vo.bno }&menu_id=${ vo.menu_id }&nowpage=${map.nowpage}
+	@RequestMapping("/UpdateForm")
+	public ModelAndView updateform( @RequestParam HashMap<String, Object> map ) {
+		
+		log.info("======Pds/UpdateForm======");
+		log.info("map1: {}", map);
+		log.info("======Pds/UpdateForm======");
+		// map: {bno=497, menu_id=MENU01, nowpage=1}
+		
+		// 메뉴 목록
+		List<MenuVo> menuList = menuMapper.getMenuList();
+		
+		// 수정할 게시글 조회
+		PdsVo pdsVo = pdsService.getPds(map);
+		log.info("======Pds/UpdateForm======");
+		log.info("pdsVo: {}", pdsVo);
+		log.info("======Pds/UpdateForm======");
+		// pdsVo: PdsVo(bno=497, title=ㄱㄱㄱ2233, content=ㄱㄱㄱ2233, writer=ㄱㄱㄱ, regdate=2024-05-28 15:00:51, hit=27, filescount=0, menu_id=MENU01, menu_name=null, menu_seq=0) 
+		
+		// 수정할 파일들 정보(fileList)
+		List<FilesVo> fileList = pdsService.getFileList(map);
+		log.info("======Pds/UpdateForm======");
+		log.info("fileList: {}", fileList);
+		log.info("======Pds/UpdateForm======");
+		// fileList: [FilesVo(file_num=25, bno=497, filename=disp.png, fileext=.png, sfilename=2024\05\28\6af26487-9407-4617-b434-f5b52398ee32_disp.png)]
+		
+		map.put("fileList", fileList);
+		log.info("======Pds/UpdateForm======");
+		log.info("map2: {}", map);
+		log.info("======Pds/UpdateForm======");
+
+		ModelAndView mv = new ModelAndView();
+		mv.addObject("map", map);
+		mv.addObject("menuList", menuList);
+		mv.addObject("vo", pdsVo);
+		mv.addObject("fileList", fileList);
+		mv.setViewName( "pds/update" );
+		return mv;
+		
+	}
+	
+	// /Pds/Update
+	@RequestMapping("/Update")
+	public ModelAndView update( 
+			@RequestParam HashMap<String, Object> map,
+			@RequestParam(value="upfile", required=false) MultipartFile [] uploadFiles
+			) {
+		
+		log.info("======Pds/Update======");
+		log.info("map: {}", map);
+		log.info("uploadFiles: {}", uploadFiles);
+		log.info("======Pds/Update======");
+		// map: {bno=497, menu_id=MENU01, nowpage=1, title=ㄱㄱㄱ2233, content=ㄱㄱㄱ2233}
+		// uploadFiles: org.springframework.web.multipart.support.StandardMultipartHttpServletRequest$StandardMultipartFile@23df6c82
+		
+		List<FilesVo> fileList = pdsService.getFileList(map);
+		log.info("======Pds/Update======");
+		log.info("fileList: {}", fileList);
+		log.info("======Pds/Update======");
+		
+		//map.put("fileList", fileList);
+		map.put("fileList", fileList);
+	    if (!fileList.isEmpty()) {
+	        map.put("file_num", fileList.get(0).getFile_num());
+	    }
+	    log.info("======Pds/Update======");
+	    log.info("map: {}", map);
+	    log.info("======Pds/Update======");
+	    
+	    map.put("bno", map.get("bno")); // Ensure bno is put correctly
+	    log.info("======Pds/Update======");
+	    log.info("map: {}", map);
+	    log.info("======Pds/Update======");
+		
+		pdsService.setUpdate( map, uploadFiles );
+		
+		ModelAndView mv = new ModelAndView();
+		mv.addObject("map", map);
+		//String loc = "redirect:/Pds/List?menu_id=" + map.get("menu_id") + "&nowpage=" + map.get("nowpage");
+		String loc = "redirect:/Pds/View?menu_id="
+							+ map.get("menu_id")
+							+ "&nowpage="
+							+ map.get("nowpage")
+							+ "&bno="
+							+ map.get("bno");
+		mv.setViewName( loc );
+		return mv;
+		
+	}
+	
+	
+	//-----------------------------------------------------------------------------------------------------
+	// 파일 다운로드
+	//   ※ Controller : ModelAndView 를 return 함
+	// 메소드는 파일을 리턴한다, ModelAndView 가 아니라 : @ResponseBody (모델구조 아닌 것은 @ResponseBody 붙여줘야함)
+	// Controller + @ResponseBody = RestController
+	// 서버에서 파일을 보내주어야 함, binary data
+	//-----------------------------------------------------------------------------------------------------
+	
+	@GetMapping("/filedownload/{file_num}")
+	@ResponseBody
+	public void downloadFile(
+			@PathVariable(value="file_num") Long file_num,
+			HttpServletResponse res
+		) throws UnsupportedEncodingException {
+		
+		// 파일을 조회 (Files)
+		FilesVo fileInfo = pdsService.getFileInfo( file_num );
+		// ≒ pdsService.getPds
+		
+		// 파일경로 (Path → import nio, Paths → ctrl+shift+o)
+		Path saveFilePath = Paths.get( uploadPath + java.io.File.separator + fileInfo.getSfilename() );
+		
+		// 해당경로에 파일이 없으면
+		//if( !saveFilePath ) {	// 빨간줄 에러 → 아래와 같이 해야함
+		if( !saveFilePath.toFile().exists() ) {
+			throw new RuntimeException( "file not found" );
+		}
+		
+		// 파일헤더 설정
+		//setFileHeader(res, fileInfo);	// add throw
+		setFileHeader(res, fileInfo);
+		
+		// 파일복사
+		fileCopy( res, saveFilePath );
+		
+	}
+	
+	// 파일복사
+	private void fileCopy(HttpServletResponse res, Path saveFilePath) {
+		
+		FileInputStream fis = null;
+		
+		//fis = new FileInputStream( saveFilePath );	// .toFile() 필요
+		//fis = new FileInputStream( saveFilePath.toFile() );	// F2 → Surround with try/catch
+		try {
+			fis = new FileInputStream( saveFilePath.toFile() );
+			FileCopyUtils.copy( fis, res.getOutputStream() );	// F2 → add catch  clause to surrounding try → io 추가
+			res.getOutputStream().flush();
+		}  catch (Exception e) {
+			throw new RuntimeException(e);	// 사용자 정의 예외
+		} finally {
+			//fis.close();	// F2 → Surround with try/catch
+			try {
+				fis.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+
+	// 다운받을 파일의 header 정보
+	private void setFileHeader(HttpServletResponse res, FilesVo fileInfo) throws UnsupportedEncodingException {
+		
+	        res.setHeader("Content-Disposition", "attachment; filename=\""
+	        				+ URLEncoder.encode( (String) fileInfo.getFilename(), "UTF-8") + "\";");
+	        res.setHeader("Content-Transfer-Encoding", "binary");
+	        res.setHeader("Content-Type", "application/download; utf-8");
+	        res.setHeader("Pragma", "no-cache;");
+	        res.setHeader("Expires", "-1;");
+	        
+	    }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
