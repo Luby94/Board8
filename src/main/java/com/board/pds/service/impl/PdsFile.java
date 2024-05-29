@@ -42,6 +42,11 @@ public class PdsFile {
 		
 		for(MultipartFile uploadFile : uploadFiles) {
 			
+			// 넘어온 파일이 비어있다면 밑에 작업하지말고 바로 다음 파일 처리하도록 넘어가는 로직
+			if(uploadFile.isEmpty()) {
+				continue;
+			}
+			
 			String originalName = uploadFile.getOriginalFilename();
 			System.out.println( "=====PdsFile_originalName: " + originalName);
 			//=====PdsFile_originalName: 0514(화) 산업현장 특강.txt
@@ -100,7 +105,13 @@ public class PdsFile {
 			FilesVo vo = new FilesVo(file_num, bno, fileName, fileExt, saveName2);
 			System.out.println( "=====PdsFile_vo: " + vo );
 			
-			fileList.add( vo );
+			//fileList.add( vo );
+			//System.out.println( "=====PdsFile_fileList_2: " + fileList );
+
+			// ↑ 위 작업, fileName 이 null 이면 insert 안되도록
+			if( !fileName.trim().equals("") || fileName != null ) {
+				fileList.add( vo );
+			}
 			System.out.println( "=====PdsFile_fileList_2: " + fileList );
 			
 		}	// end for
